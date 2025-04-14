@@ -11,11 +11,12 @@ model Incident {
   id        String   @id @default(uuid())
   type      String
   date      DateTime
-  hour      Int?
-  neighbor  String
   address   String
   createdAt DateTime @default(now())
   source    String
+
+  neighborId Int
+  neighbor   Neighbor @relation(fields: [neighborId], references: [gid])
 }
 
 model Vote {
@@ -23,4 +24,13 @@ model Vote {
   ip        String
   location  String
   createdAt DateTime @default(now())
+}
+
+model Neighbor {
+  gid   Int    @id
+  nro   Int
+  name  String
+  codba String
+
+  incidents Incident[]
 }

@@ -5,18 +5,38 @@ import "leaflet/dist/leaflet.css";
 import { useEffect, useState } from "react";
 import { Utils } from "@/lib/utils";
 
+function getColorFromIntensity(intensity: number): string {
+  const r = Math.floor(255 * intensity);
+  const g = Math.floor(255 * (1 - intensity));
+  return `rgb(${r},${g},0)`;
+}
+
 const MapComponent = () => {
   const [barrios, setBarrios] = useState(null);
+  const [incidents, setIncidents] = useState<{ [gid: string]: number } | null>(null);
 
   useEffect(() => {
     fetch("/barrios.geojson")
       .then((res) => res.json())
-      .then((res) => {
-        console.log(res);
-        return res;
-      })
       .then((data) => setBarrios(data));
   }, []);
+
+  useEffect(() => {
+    if (barrios) {
+      const fetchIncidents = async () => {
+        const response = await fetch("/api/incidents");
+        const data = await response.json();
+        setIncidents(data);
+        console.log(data);
+      };
+
+      fetchIncidents();
+    }
+  }, [barrios]);
+
+  if (!barrios || !incidents) {
+    return <div>Loading...</div>;
+  }
 
   return (
     <MapContainer
@@ -31,12 +51,17 @@ const MapComponent = () => {
       {barrios && (
         <GeoJSON
           data={barrios}
-          style={() => ({
-            color: "blue",
-            weight: 1,
-            fillColor: "lightblue",
-            fillOpacity: 0.8,
-          })}
+          style={(feature) => {
+            const gid = feature!.properties.GID;
+            const intensidad = incidents[gid] || 0;
+            const color = getColorFromIntensity(intensidad);
+            return {
+              color: "black",
+              weight: 1,
+              fillColor: color,
+              fillOpacity: 0.8,
+            };
+          }}
           onEachFeature={(feature, layer) => {
             const barrio =
               feature.properties.BARRIO || feature.properties.barrio;
